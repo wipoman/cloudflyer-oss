@@ -1,3 +1,7 @@
+> **本分支新增：Oracle AMD / Ubuntu VPS 修复与部署。**
+> 包含按钮查找回退修复、Chrome 升级构建配方及不启动完整桌面的运行方式。
+> 请先阅读 [中文部署与修改说明](docs/VPS部署与修改说明.md)，并使用 `Dockerfile.vps` 构建。下方保留上游通用说明；`jackzzs/cloudflyer` 原镜像不包含本分支补丁。
+
 # Cloudflyer
 
 Cloudflyer is a Python service that helps solve various web security challenges including Cloudflare challenges, Turnstile captchas, and reCAPTCHA Invisible.
@@ -199,3 +203,4 @@ Content-Type: application/json
   }
 }
 ```
+

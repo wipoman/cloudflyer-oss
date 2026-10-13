@@ -1,0 +1,21 @@
+# Oracle AMD64 VPS deployment, based on the image used in the working setup.
+# Override only when intentionally selecting a different compatible base image.
+ARG BASE_IMAGE=jackzzs/cloudflyer@sha256:b936ec266fb4670543cee2d872b479015bbbb4098b9cbb9c14eaffc500ddd4ef
+FROM ${BASE_IMAGE}
+USER root
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1
+# Refresh the signing key before apt update: the base has an old Google key.
+RUN test "$(dpkg --print-architecture)" = amd64 \
+    && curl -fL --retry 2 https://dl.google.com/linux/linux_signing_key.pub -o /tmp/google.asc \
+    && install -m 644 /tmp/google.asc /etc/apt/trusted.gpg.d/google.asc \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && rm -f /tmp/google.asc \
+    && rm -rf /var/lib/apt/lists/*
+# The upstream image installs this package editable from /app.
+COPY cloudflyer/bypasser.py /app/cloudflyer/bypasser.py
+WORKDIR /app
+EXPOSE 3000
+# Skip the Kasm/VNC desktop startup. -L starts Xvfb in CloudFlyer itself.
+ENTRYPOINT ["/app/venv/bin/python", "-u", "-m", "cloudflyer"]
+CMD ["-H", "0.0.0.0", "-P", "3000", "-M", "1", "-L"]

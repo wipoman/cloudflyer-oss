@@ -41,7 +41,11 @@ class CloudflareBypasser:
         for ele in eles:
             if "name" in ele.attrs.keys() and "type" in ele.attrs.keys():
                 if "turnstile" in ele.attrs["name"] and ele.attrs["type"] == "hidden":
-                    button = ele.parent().shadow_root.child()("tag:body").shadow_root("tag:input")
+                    try:
+                        button = ele.parent().shadow_root.child()("tag:body").shadow_root("tag:input")
+                    except AttributeError:
+                        # Missing shadow roots must not skip the recursive fallback.
+                        button = None
                     break
             
         if button:
@@ -99,3 +103,4 @@ class CloudflareBypasser:
             logger.debug("Bypass successful.")
         else:
             logger.debug("Bypass failed.")
+
