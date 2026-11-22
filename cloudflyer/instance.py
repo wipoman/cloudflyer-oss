@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 import os
-import socket
 from threading import Event
 import time
 from urllib.parse import urlparse
@@ -11,7 +10,6 @@ import urllib3
 # Disable InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from cachetools import TTLCache
 from mitmproxy.http import HTTPFlow, Response
 from DrissionPage import ChromiumPage, ChromiumOptions
 from DrissionPage.errors import PageDisconnectedError
@@ -80,7 +78,6 @@ class MITMAddon:
         return self.recaptcha_invisible_html_templ.replace("![sitekey]!", site_key).replace("![action]!", action)
     
     def __init__(self) -> None:
-        self.url_cache = TTLCache(maxsize=10000, ttl=timedelta(hours=1).total_seconds())
         self.reset()
         self.ready = Event()
         
@@ -98,17 +95,6 @@ class MITMAddon:
         self.user_agent = None
         self.result = None
         
-    def http_connect(self, flow: HTTPFlow):
-        # Use better IP for chinese users
-        host = flow.request.host
-        if host == "challenges.cloudflare.com":
-            ip = socket.gethostbyname("challenges.cf.cname.vvhan.com")
-            port = flow.request.port
-            flow.request.host = ip
-            flow.request.authority = f"{ip}:{port}"
-            flow.server_conn.sni = host
-            logger.debug(f"CONNECT IP override {host} -> {ip}")
-    
     def requestheaders(self, flow: HTTPFlow):
         # Modify request UA
         if self.user_agent:
@@ -129,17 +115,7 @@ class MITMAddon:
             return
     
     def request(self, flow: HTTPFlow):
-        # Use better IP for chinese users
-        host = flow.request.host
-        if host == "challenges.cloudflare.com":
-            ip = socket.gethostbyname("challenges.cf.cname.vvhan.com")
-            flow.request.host = ip
-            # HTTP/1.1 host header keeps original host
-            flow.request.headers["Host"] = host
-            # HTTP/2 uses :authority
-            flow.request.authority = host
-            logger.debug(f"HTTP IP override {host} -> {ip}")
-        
+        # Preserve the official hostname; let the normal resolver handle DNS.
         # Show turnstile solving page
         if self.turnstile_target_host and self.turnstile_target_host in flow.request.pretty_host:
             flow.response = Response.make(
@@ -182,12 +158,6 @@ class MITMAddon:
                 )
                 logger.debug("Caught turnstile token using MITM.")
 
-        elif flow.request.pretty_url in self.url_cache:
-            # Replay cached response
-            cached_response = self.url_cache[flow.request.pretty_url]
-            flow.response = cached_response
-            logger.debug(f"Replayed cached response for: {flow.request.pretty_url}")
-            
         if not flow.response:
             logger.debug(f"MITM caught and continue request to: {flow.request.pretty_url}")
         else:
@@ -206,12 +176,9 @@ class MITMAddon:
                 )
                 return
 
-            # Block medias
+            # Keep page styles, images and fonts; only filter audio/video.
             content_type = flow.response.headers.get("Content-Type", "")
-            blocked_types = [
-                "image/", "font/", "text/css",
-                "audio/", "video/", "application/font",
-            ]
+            blocked_types = ["audio/", "video/"]
             if any(btype in content_type.lower() for btype in blocked_types):
                 flow.response = Response.make(
                     404,
@@ -264,11 +231,8 @@ class MITMAddon:
                 {"Content-Type": "text/html"},
             )
             
-        # Cache static urls
-        if flow.request.pretty_url.startswith("https://challenges.cloudflare.com/turnstile/v0/"):
-            url = flow.request.pretty_url
-            self.url_cache[url] = flow.response
-            logger.debug(f"Cached static url: {url}")
+        # Do not cache/replay Turnstile responses: the v0 URL prefix includes
+        # challenge/session data, not just immutable static assets.
 
 class Instance:
     def __init__(

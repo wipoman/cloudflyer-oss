@@ -1,3 +1,5 @@
+> **2026-11-22 更新：** 移除第三方 DNS 改写及 Turnstile 响应缓存，允许页面 CSS/图片/字体；详见 [修复记录](docs/BROWSER_COMPATIBILITY.md)。`Dockerfile.vps` 已包含这些源码补丁。
+
 > **本分支新增：Oracle AMD / Ubuntu VPS 修复与部署。**
 > 包含按钮查找回退修复、Chrome 升级构建配方及不启动完整桌面的运行方式。
 > 请先阅读 [中文部署与修改说明](docs/VPS部署与修改说明.md)，并使用 `Dockerfile.vps` 构建。下方保留上游通用说明；`jackzzs/cloudflyer` 原镜像不包含本分支补丁。

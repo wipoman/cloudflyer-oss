@@ -9,11 +9,11 @@ RUN test "$(dpkg --print-architecture)" = amd64 \
     && curl -fL --retry 2 https://dl.google.com/linux/linux_signing_key.pub -o /tmp/google.asc \
     && install -m 644 /tmp/google.asc /etc/apt/trusted.gpg.d/google.asc \
     && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && apt-get install -y --no-install-recommends google-chrome-stable xdotool x11-utils \
     && rm -f /tmp/google.asc \
     && rm -rf /var/lib/apt/lists/*
 # The upstream image installs this package editable from /app.
-COPY cloudflyer/bypasser.py /app/cloudflyer/bypasser.py
+COPY cloudflyer/bypasser.py cloudflyer/instance.py /app/cloudflyer/
 WORKDIR /app
 EXPOSE 3000
 # Skip the Kasm/VNC desktop startup. -L starts Xvfb in CloudFlyer itself.

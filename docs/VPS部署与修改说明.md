@@ -2,12 +2,14 @@
 
 本分支整理 2026-10-13 配合 [wipoman/ns-sign](https://github.com/wipoman/ns-sign) 排障时的修复。运行环境为 Oracle AMD64 / Ubuntu、Docker；以下为 root 命令。
 
+> 2026-11-22 新增：[浏览器兼容性修复与验证范围](BROWSER_COMPATIBILITY.md)。已将 DNS、资源过滤、响应缓存修改写入 `instance.py` 并纳入 VPS 镜像构建。
+
 ## 修改内容与验证范围
 
 | 项目 | 修改 |
 | --- | --- |
 | `cloudflyer/bypasser.py` | 在 `locate_cf_button()` 的快捷查找中捕获 `AttributeError`，置 `button=None`，使缺失 shadow root 时仍能进入原有递归查找。其他异常保留原处理方式。 |
-| `Dockerfile.vps` | 新增基于本次实测原镜像 digest 的构建配方；先安装 Google 官方签名公钥，再升级 Chrome stable；复制本仓库的按钮查找补丁。 |
+| `Dockerfile.vps` | 新增基于本次实测原镜像 digest 的构建配方；先安装 Google 官方签名公钥，再升级 Chrome stable；复制本仓库的 `bypasser.py` 和 `instance.py` 补丁，并安装 `xdotool` / `x11-utils`。 |
 | `Dockerfile.vps` | 直接用 `/app/venv/bin/python -u -m cloudflyer` 启动，跳过原 Kasm/VNC 完整桌面入口；使用 `-L` 启动虚拟显示。 |
 | 文档 | 整理单实例、共享内存、本地端口、升级与回滚、日志检查方法。 |
 | `tests/` | 覆盖快捷查找成功、缺失 shadow root 后递归回退、浏览器断开异常传播。 |
